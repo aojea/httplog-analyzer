@@ -86,10 +86,11 @@ func main() {
 	}
 }
 
+// Parse the log file
 func Parse(line string) (ParsedLine, error) {
 	var parsedLine ParsedLine
 	var err error
-	fields := GetStringFromLog(line)
+	fields := GetFieldsFromLog(line)
 	if len(fields) != 7 {
 		return ParsedLine{}, fmt.Errorf("Expected 7 fields, Received %d fields: %v", len(fields), fields)
 	}
@@ -120,18 +121,20 @@ func Parse(line string) (ParsedLine, error) {
 	return parsedLine, nil
 }
 
-// GetStringFromLog parses an Apache CommonLog string and returns it split in fields
+// GetFieldsFromLog parses an Apache CommonLog string and returns it split in fields
 // since golang regexp doesn't allow to capture records and we know the log format beforehand
 // we convert [ and ] to " split the line by " to obtain the fields inside brackets and quotes
 // then we can just split by spaces the rest of the fields
-func GetStringFromLog(line string) []string {
+func GetFieldsFromLog(line string) []string {
 	var fields []string
 	// we need at least 7 fields
 	if len(strings.Fields(line)) < 7 {
 		return fields
 	}
+	// Replace [ and ] by "
 	s := strings.Replace(line, "[", "\"", 1)
 	s = strings.Replace(s, "]", "\"", 1)
+	// Split by " so t[1] is the date and [3] the request
 	t := strings.Split(s, "\"")
 	fields = append(fields, strings.Fields(t[0])...)
 	fields = append(fields, t[1], t[3])
