@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/DataDog/datadog-go/statsd"
 	"github.com/hpcloud/tail"
 )
 
@@ -42,11 +44,21 @@ type ParsedLine struct {
 func main() {
 	// Configuration
 	file := flag.String("f", defaultFile, "log file")
+	statsdAddress := flag.String("s", "127.0.0.1:8125", "Statsd server address")
+	help := flag.String("h", "", "help")
 	flag.Parse()
-	if len(os.Args) > 3 {
+	if len(os.Args) > 6 || len(*help) > 0 {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
+
+	// Create a client
+	statsd, err := statsd.New(*statsdAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+	statsd.Namespace = filepath.Base(*file)
+
 	// Open file
 	t, err := tail.TailFile(*file, tail.Config{
 		Poll:      true,
@@ -68,6 +80,7 @@ func main() {
 			log.Println(err)
 			continue
 		}
+		statsd.Incr("number.requests", nil, 1)
 		fmt.Println(l)
 
 	}
