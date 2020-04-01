@@ -15,6 +15,14 @@ import (
 
 const defaultFile = "/tmp/access.log"
 
+// LogParser parse lines and sends stats to a Statsd server
+type LogParser interface {
+	LogParse(c *statsd.Client, line string) error
+}
+
+// CommonLog implements the LogParser interface
+type CommonLog struct{}
+
 // Common Logfile Format
 // https://www.w3.org/Daemon/User/Config/Logging.html
 
@@ -30,69 +38,45 @@ const defaultFile = "/tmp/access.log"
 // bytes: The content-length of the document transferred.
 
 // 127.0.0.1 - mary [09/May/2018:16:00:42 +0000] "POST /api/user HTTP/1.0" 503 12
-
-type ParsedLine struct {
+// ParsedLineCLF contains the CLF fields
+type ParsedLineCLF struct {
 	remotehost string
 	rfc931     string
 	authuser   string
 	date       string
 	request    string
 	status     string
-	bytes      int
+	bytes      int64
 }
 
-func main() {
-	// Configuration
-	file := flag.String("f", defaultFile, "log file")
-	statsdAddress := flag.String("s", "127.0.0.1:8125", "Statsd server address")
-	help := flag.String("h", "", "help")
-	flag.Parse()
-	if len(os.Args) > 6 || len(*help) > 0 {
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
-
-	// Create a client
-	statsd, err := statsd.New(*statsdAddress)
+// LogParse parse the logs of Common Log Format
+func (clog CommonLog) LogParse(c *statsd.Client, line string) error {
+	l, err := clog.parse(line)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	statsd.Namespace = filepath.Base(*file)
+	clog.send(c, l)
+	return nil
+}
 
-	// Open file
-	t, err := tail.TailFile(*file, tail.Config{
-		Poll:      true,
-		Follow:    true,
-		ReOpen:    false,
-		MustExist: true})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer t.Stop()
-	defer t.Cleanup()
-
-	// Process file
-	for line := range t.Lines {
-		// TODO: Count each line
-		l, err := Parse(line.Text)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		statsd.Incr("number.requests", nil, 1)
-		fmt.Println(l)
-
-	}
+// Send sends stats from the parsed line
+func (clog CommonLog) send(c *statsd.Client, p ParsedLineCLF) error {
+	// TODO: aggregate errors
+	c.Incr("requests.count", nil, 1)
+	c.Incr(fmt.Sprintf("host.%s.count", p.remotehost), nil, 1)
+	c.Incr(fmt.Sprintf("user.%s.count", p.authuser), nil, 1)
+	c.Incr(fmt.Sprintf("status.%s.count", p.status), nil, 1)
+	c.Count("bytes.count", p.bytes, nil, 1)
+	return nil
 }
 
 // Parse the log file
-func Parse(line string) (ParsedLine, error) {
-	var parsedLine ParsedLine
+func (clog CommonLog) parse(line string) (ParsedLineCLF, error) {
+	var parsedLine ParsedLineCLF
 	var err error
-	fields := GetFieldsFromLog(line)
+	fields := getFieldsFromLog(line)
 	if len(fields) != 7 {
-		return ParsedLine{}, fmt.Errorf("Expected 7 fields, Received %d fields: %v", len(fields), fields)
+		return ParsedLineCLF{}, fmt.Errorf("Expected 7 fields, Received %d fields: %v", len(fields), fields)
 	}
 
 	// remotehost
@@ -111,12 +95,12 @@ func Parse(line string) (ParsedLine, error) {
 	// TODO: Compare with current time and Warn or Error that the data is old
 	// request
 	parsedLine.request = fields[4]
-	// statues
+	// status
 	parsedLine.status = fields[5]
 	// bytes
-	parsedLine.bytes, err = strconv.Atoi(fields[6])
+	parsedLine.bytes, err = strconv.ParseInt(fields[6], 10, 64)
 	if err != nil {
-		return ParsedLine{}, fmt.Errorf("Error parsing, expected an integer and received %v: %v", fields[6], err)
+		return ParsedLineCLF{}, fmt.Errorf("Error parsing, expected an integer and received %v: %v", fields[6], err)
 	}
 	return parsedLine, nil
 }
@@ -125,7 +109,7 @@ func Parse(line string) (ParsedLine, error) {
 // since golang regexp doesn't allow to capture records and we know the log format beforehand
 // we convert [ and ] to " split the line by " to obtain the fields inside brackets and quotes
 // then we can just split by spaces the rest of the fields
-func GetFieldsFromLog(line string) []string {
+func getFieldsFromLog(line string) []string {
 	var fields []string
 	// we need at least 7 fields
 	if len(strings.Fields(line)) < 7 {
@@ -140,4 +124,49 @@ func GetFieldsFromLog(line string) []string {
 	fields = append(fields, t[1], t[3])
 	fields = append(fields, strings.Fields(t[4])...)
 	return fields
+}
+
+func main() {
+	// Configuration
+	file := flag.String("f", defaultFile, "log file")
+	statsdAddress := flag.String("s", "127.0.0.1:8125", "Statsd server address")
+	help := flag.String("h", "", "help")
+	flag.Parse()
+	if len(os.Args) > 6 || len(*help) > 0 {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	// Create a client
+	c, err := statsd.New(*statsdAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+	c.Namespace = filepath.Base(*file)
+
+	// Create a LogProcessor
+	// Using an interface allows to replace the log processor
+	var logParser LogParser
+	logParser = CommonLog{}
+
+	// Open file
+	t, err := tail.TailFile(*file, tail.Config{
+		Poll:      true,
+		Follow:    true,
+		ReOpen:    false,
+		MustExist: true})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer t.Stop()
+	defer t.Cleanup()
+
+	// Process file
+	for line := range t.Lines {
+		err := logParser.LogParse(c, line.Text)
+		if err != nil {
+			log.Println(err)
+		}
+	}
 }
