@@ -1,0 +1,36 @@
+version: "3"
+services:
+  influxdb:
+    container_name: influxdb
+    image: influxdb:1.7-alpine
+    ports:
+      - "8083:8083"
+      - "8086:8086"
+    volumes:
+      - data-influxdb:/var/lib/influxdb
+    restart: always
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:6.7.2
+    ports:
+      - "3000:3000"
+    links:
+      - influxdb
+    restart: always
+    volumes:
+    - ./grafana/provisioning:/etc/grafana/provisioning
+
+  telegraf:
+    container_name: telegraf
+    depends_on:
+      - "influxdb"
+    image: telegraf:1.14-alpine
+    network_mode: "host"
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    restart: always
+
+volumes:
+  data-influxdb:
+    driver: local
