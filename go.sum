@@ -1,5 +1,7 @@
 github.com/DataDog/datadog-go v3.5.0+incompatible h1:AShr9cqkF+taHjyQgcBcQUt/ZNK+iPq4ROaZwSX5c/U=
 github.com/DataDog/datadog-go v3.5.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
+github.com/JensRantil/graphite-client v0.0.0-20151206234601-d93bf4b72f5a h1:hA3QWB8sdCKmwoHbQQPy8ZJiUpE5mSjz9b7XS6c+J6M=
+github.com/JensRantil/graphite-client v0.0.0-20151206234601-d93bf4b72f5a/go.mod h1:KLFQDNor8WMbNo97GenEJDe+IylBLdNS5kgUJHfsoXI=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/hpcloud/tail v1.0.0 h1:nfCOvKYfkgYP8hkirhJocXT2+zOD8yUNjXaWfTlyFKI=
