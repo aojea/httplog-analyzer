@@ -17,6 +17,8 @@ The corresponding code is in the file [logparse.go](logparse.go).
 
 The monitoring system is based in 3 components:
 
+![Architecture](docs/httplog-analyzer.svg)
+
 * *httplog-analyzer*
 
 1. parse the logs and sends the metrics to a statsd daemon.
@@ -73,8 +75,23 @@ docker-compose up
 
 ## UI
 
-You can install Grafana to consume the data stored in InfluxDB, just configure it to [use InfluxDB in Grafana as data source](https://grafana.com/docs/grafana/latest/features/datasources/influxdb/)
+You can install Grafana to consume the data stored in InfluxDB, just configure it to [use InfluxDB in Grafana as data source](https://grafana.com/docs/grafana/latest/features/datasources/influxdb/).
 
 ## Extensions
 
-*httplog-analyzer* can work with any StatsD daemon, per example, you can configure the client to connect to the Datadog agent or any other system that is able to consume StatsD data and see the data on those services.
+*httplog-analyzer* can work with any StatsD daemon, per example, you can replace *telegra* and *InfluxDB* and use the [Datadog agent](https://docs.datadoghq.com/developers/dogstatsd/?tab=go#how-it-works) or any other system that is able to consume StatsD data and see the data on those services.
+
+Another option is configuring *telegraf* to send metrics to another service, i.e., enabling the following section in *telegraf.conf* allows you to visualize your metrics locally and using the [Datadog service](https://www.datadoghq.com/):
+
+```
+# # Configuration for DataDog API to send metrics to.
+# [[outputs.datadog]]
+#   ## Datadog API key
+#   apikey = "my-secret-key" # required.
+#
+#   # The base endpoint URL can optionally be specified but it defaults to:
+#   #url = "https://app.datadoghq.com/api/v1/series"
+#
+#   ## Connection timeout.
+#   # timeout = "5s"
+```
