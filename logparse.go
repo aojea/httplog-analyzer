@@ -60,6 +60,9 @@ func (clog CommonLog) send(c *statsd.Client, p ParsedLineCLF) error {
 	c.Incr(fmt.Sprintf("user.%s.count", p.authuser), nil, 1)
 	c.Incr(fmt.Sprintf("status.%s.count", p.status), nil, 1)
 	c.Count("bytes.count", p.bytes, nil, 1)
+	// Obtain section
+	section := getSectionFromRequest(p.request)
+	c.Incr(fmt.Sprintf("section.%s.count", section), nil, 1)
 	return nil
 }
 
@@ -117,4 +120,10 @@ func getFieldsFromLog(line string) []string {
 	fields = append(fields, t[1], t[3])
 	fields = append(fields, strings.Fields(t[4])...)
 	return fields
+}
+
+func getSectionFromRequest(req string) string {
+	s := strings.Fields(req)
+	m := strings.SplitAfterN(s[1], "/", 3)
+	return strings.TrimSuffix(m[1], "/")
 }
