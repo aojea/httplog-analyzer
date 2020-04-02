@@ -2,26 +2,24 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"time"
 
-	graphite "github.com/JensRantil/graphite-client"
+	_ "github.com/influxdata/influxdb1-client" // this is important because of the bug in go mod
+	client "github.com/influxdata/influxdb1-client/v2"
 )
 
 // Alerter send an event based on metrics information
 type Alerter interface {
-	Alert(g *graphite.Client, threshold int) error
+	Alert(i client.Client, threshold int) error
 }
 
 // CommonLogAlert implements the Alterter interface
 type CommonLogAlert struct{}
 
 // Alert depending of threshold
-func (c CommonLogAlert) Alert(g *graphite.Client, threshold int) error {
-	values, err := g.QueryIntsSince("myhost.category.value", 2*time.Minute)
-	if err != nil {
-		log.Println("Error querying graphite: %v", err)
+func (c CommonLogAlert) Alert(i client.Client, threshold int) error {
+	q := client.NewQuery("SELECT count(value) FROM cpu_load", "mydb", "")
+	if response, err := i.Query(q); err == nil && response.Error() == nil {
+		fmt.Println(response.Results)
 	}
-	fmt.Println(values)
 	return nil
 }

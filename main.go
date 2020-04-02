@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 
 	"github.com/DataDog/datadog-go/statsd"
-	graphite "github.com/JensRantil/graphite-client"
 	"github.com/hpcloud/tail"
+	_ "github.com/influxdata/influxdb1-client" // this is important because of the bug in go mod
+	client "github.com/influxdata/influxdb1-client/v2"
 )
 
 const defaultFile = "/tmp/access.log"
@@ -17,7 +18,7 @@ func main() {
 	// Configuration
 	file := flag.String("f", defaultFile, "log file")
 	statsdAddress := flag.String("s", "127.0.0.1:8125", "Statsd server address")
-	graphiteAddress := flag.String("g", "http://localhost:8080/render/", "Graphite server address")
+	influxAddress := flag.String("i", "http://localhost:8086", "InfluxDB server address")
 	threshold := flag.Int("t", 10, "Threshold requests per second averaged over a 2 minutes slot")
 	help := flag.String("h", "", "help")
 	flag.Parse()
@@ -32,12 +33,16 @@ func main() {
 		log.Fatal(err)
 	}
 	c.Namespace = filepath.Base(*file)
+	defer c.Close()
 
-	// Create a graphite client
-	g, err := graphite.New(*graphiteAddress)
+	// Create a influxdb client
+	i, err := client.NewHTTPClient(client.HTTPConfig{
+		Addr: *influxAddress,
+	})
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Error creating InfluxDB Client: ", err.Error())
 	}
+	defer i.Close()
 	// Create a LogProcessor
 	// Using an interface allows to replace the log processor
 	// for different log formats
@@ -60,12 +65,12 @@ func main() {
 	// Display metrics
 	var displayer Displayer
 	displayer = CommonLogDisplay{}
-	go displayer.Display(g)
+	go displayer.Display(i)
 
 	// Alert
 	var alerter Alerter
 	alerter = CommonLogAlert{}
-	go alerter.Alert(g, *threshold)
+	go alerter.Alert(i, *threshold)
 
 	// Process file
 	for line := range t.Lines {
