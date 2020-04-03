@@ -63,16 +63,23 @@ Usage of ./httplog-analyzer:
 
 If you don't have installed all the components, you can run a demo using docker.
 
-1. Make sure you have installed [docker](https://docs.docker.com/install/) and [docker compose](https://docs.docker.com/compose/)
+1. Make sure you have installed [docker](https://docs.docker.com/install/) and [docker compose](https://docs.docker.com/compose/) and clone this repository.
 
-2. Run the docker-compose file:
+
+2. From the root of the repository run the docker-compose file:
 
 ```sh
-docker-compose up
+docker-compose -f demo/docker-compose.yaml up
 ```
 
-3. Once docker-compose file you have your metrics infrastructure ready to go, just launch the log analyzer and observe the results in the console.
+3. Once docker-compose created all the containers you have your metrics infrastructure ready to go, just build and launch the log analyzer and observe the results in the console.
 
+*NOTE:* If you don't have a log file you can create a fake one with [flog](https://github.com/mingrammer/flog)
+
+```sh
+go build
+./httplog-analyzer -f /var/log/httpd/access.log
+```
 
 
 ## UI

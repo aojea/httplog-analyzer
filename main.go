@@ -13,6 +13,7 @@ import (
 )
 
 const defaultFile = "/tmp/access.log"
+const defaultDBname = "statsd"
 
 func main() {
 	// Configuration
@@ -32,7 +33,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating StatsD client: %v", err)
 	}
-	c.Namespace = filepath.Base(*file)
 	defer c.Close()
 
 	// Create a influxdb client
@@ -45,9 +45,11 @@ func main() {
 	defer i.Close()
 	// Create a LogProcessor
 	// Using an interface allows to replace the log processor
-	// for different log formats
+	// so we can use different log formats
 	var logParser LogParser
-	logParser = CommonLog{}
+	// Tag metrics with the filename
+	// TODO: create constructor
+	logParser = CommonLog{client: c, filename: filepath.Base(*file)}
 
 	// Open file
 	t, err := tail.TailFile(*file, tail.Config{
@@ -63,37 +65,31 @@ func main() {
 	defer t.Cleanup()
 
 	// Display metrics
-	var displayer Displayer
-	displayer = CommonLogDisplay{}
-	go displayer.Display(i)
+	// var displayer Displayer
+	// displayer = &CommonLogDisplay{client: i}
+	// go displayer.Display()
 
 	// Alert
 	var alerter Alerter
-	alerter = CommonLogAlert{}
+	// TODO: create constructor
+	alerter = &CommonLogAlert{client: i, filename: filepath.Base(*file)}
+	alertCh := make(chan string)
+	go alerter.Alert(*threshold, alertCh)
 	go func() {
-		status := false
 		for {
-			alert, err := alerter.Alert(i, *threshold)
-			if err != nil {
-				log.Printf("Error with the alerting subsystem: %v", err)
-				return
-			}
-			if alert != status {
-				if alert {
-					c.SimpleEvent("High traffic generated an alert", "hits = {value}, triggered at {time}”")
-				} else {
-					c.SimpleEvent("High traffic alert recovered", "hits = {value}, triggered at {time}”")
-				}
-
+			select {
+			case msg := <-alertCh:
+				log.Println(msg)
 			}
 		}
 	}()
 
 	// Process file
 	for line := range t.Lines {
-		err := logParser.LogParse(c, line.Text)
+		err := logParser.LogParse(line.Text)
 		if err != nil {
 			log.Println(err)
 		}
+
 	}
 }

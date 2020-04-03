@@ -10,11 +10,14 @@ import (
 
 // LogParser parse lines and sends stats to a Statsd server
 type LogParser interface {
-	LogParse(c *statsd.Client, line string) error
+	LogParse(line string) error
 }
 
 // CommonLog implements the LogParser interface
-type CommonLog struct{}
+type CommonLog struct {
+	client   *statsd.Client
+	filename string
+}
 
 // Common Logfile Format
 // https://www.w3.org/Daemon/User/Config/Logging.html
@@ -43,31 +46,36 @@ type ParsedLineCLF struct {
 }
 
 // LogParse parse the logs of Common Log Format
-func (clog CommonLog) LogParse(c *statsd.Client, line string) error {
-	l, err := clog.parse(line)
+func (c CommonLog) LogParse(line string) error {
+	l, err := c.parse(line)
 	if err != nil {
 		return err
 	}
-	clog.send(c, l)
+	c.send(l)
 	return nil
 }
 
 // Send sends stats from the parsed line
-func (clog CommonLog) send(c *statsd.Client, p ParsedLineCLF) error {
+func (c CommonLog) send(p ParsedLineCLF) error {
+
 	// TODO: process errors, aggregate all
-	c.Incr("requests.count", nil, 1)
-	c.Incr(fmt.Sprintf("host.%s.count", p.remotehost), nil, 1)
-	c.Incr(fmt.Sprintf("user.%s.count", p.authuser), nil, 1)
-	c.Incr(fmt.Sprintf("status.%s.count", p.status), nil, 1)
-	c.Count("bytes.count", p.bytes, nil, 1)
+	tag := "file" + ":" + c.filename
 	// Obtain section
 	section := getSectionFromRequest(p.request)
-	c.Incr(fmt.Sprintf("section.%s.count", section), nil, 1)
+	tags := []string{tag, "user:" + p.authuser, "host:" + p.remotehost, "section:" + section, "status:" + p.status}
+
+	c.client.Incr("requests.total", []string{tag}, 1)
+	c.client.Incr("requests.remotehost.count", tags, 1)
+	c.client.Incr("requests.user.count", tags, 1)
+	c.client.Incr("requests.status.count", tags, 1)
+	c.client.Incr("requests.section.count", tags, 1)
+	// We can obtain bytes per user, host or section visited
+	c.client.Count("requests.bytes.count", p.bytes, tags, 1)
 	return nil
 }
 
 // Parse the log file
-func (clog CommonLog) parse(line string) (ParsedLineCLF, error) {
+func (c CommonLog) parse(line string) (ParsedLineCLF, error) {
 	var parsedLine ParsedLineCLF
 	var err error
 	fields := getFieldsFromLog(line)
@@ -122,6 +130,8 @@ func getFieldsFromLog(line string) []string {
 	return fields
 }
 
+// TODO: we can get more data from the request
+// "{method} {request} {protocol}"
 func getSectionFromRequest(req string) string {
 	s := strings.Fields(req)
 	m := strings.SplitAfterN(s[1], "/", 3)

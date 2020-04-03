@@ -13,14 +13,16 @@ import (
 
 // Displayer displays the metrics information
 type Displayer interface {
-	Display(i client.Client) error
+	Display() error
 }
 
 // CommonLogDisplay implements the Displayer interface
-type CommonLogDisplay struct{}
+type CommonLogDisplay struct {
+	client client.Client
+}
 
 // Display metrics from graphite
-func (c CommonLogDisplay) Display(i client.Client) error {
+func (c CommonLogDisplay) Display() error {
 
 	if err := ui.Init(); err != nil {
 		log.Fatalf("failed to initialize termui: %v", err)
@@ -50,8 +52,16 @@ func (c CommonLogDisplay) Display(i client.Client) error {
 	}
 
 	q := client.NewQuery("SELECT count(value) FROM cpu_load", "mydb", "")
-	if response, err := i.Query(q); err == nil && response.Error() == nil {
+	response, err := c.client.Query(q)
+	if err != nil {
+		return err
+	}
+	if err == nil && response.Error() == nil {
 		fmt.Println(response.Results)
+
 	}
 	return nil
 }
+
+bps := fmt.Sprintf("SELECT mean(value)  / 10 FROM request_bytes_count WHERE (file = '%s' AND time > now() -2m)", c.filename)
+topSection := bps := fmt.Sprintf("SELECT mean(value)  / 10 FROM request_bytes_count WHERE (file = '%s' AND time > now() -2m)", c.filename)
