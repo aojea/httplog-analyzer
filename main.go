@@ -18,7 +18,7 @@ func main() {
 	// Configuration
 	file := flag.String("f", defaultFile, "log file")
 	statsdAddress := flag.String("s", "127.0.0.1:8125", "Statsd server address")
-	influxAddress := flag.String("i", "http://localhost:8086", "InfluxDB server address")
+	influxAddress := flag.String("i", "http://127.0.0.1:8086", "InfluxDB server address")
 	threshold := flag.Int("t", 10, "Threshold requests per second averaged over a 2 minutes slot")
 	help := flag.String("h", "", "help")
 	flag.Parse()

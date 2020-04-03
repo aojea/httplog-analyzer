@@ -36,7 +36,9 @@ The monitoring system is based in 3 components:
 
 You can install the *httplog-analyzer* using `go build` or with the docker image provided.
 
-You need to provide a StatsD collector and a storage, in this case we are going to use *telegraf* and *InfluxDB* 
+You need to provide a StatsD collector and a storage, in this case we are going to use *telegraf* and *InfluxDB*.
+
+You have to enable the StatsD Input plugin in *telegraf*, you can find an example configuration [in the demo folder](demo/telegraf/telegraf.conf).
 
 
 ## How to use it
@@ -50,11 +52,11 @@ Usage of ./httplog-analyzer:
   -f string
         log file (default "/tmp/access.log")
   -i string
-        InfluxDB server address (default "http://localhost:8086")
+        InfluxDB server address (default "http://127.0.0.1:8086")
   -h string
         help
   -s string
-        Statsd server address (default "localhost:8125")
+        Statsd server address (default "127.0.0.1:8125")
   -t int
         Threshold requests per second averaged over a 2 minutes slot (default 10)
 ```
@@ -63,13 +65,13 @@ If you don't have installed all the components, you can run a demo using docker.
 
 1. Make sure you have installed [docker](https://docs.docker.com/install/) and [docker compose](https://docs.docker.com/compose/)
 
-2. Run the compose file:
+2. Run the docker-compose file:
 
 ```sh
 docker-compose up
 ```
 
-3.
+3. Once docker-compose file you have your metrics infrastructure ready to go, just launch the log analyzer and observe the results in the console.
 
 
 
