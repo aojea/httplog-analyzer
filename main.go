@@ -30,7 +30,7 @@ func main() {
 	// Create a statsd client
 	c, err := statsd.New(*statsdAddress)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error creating StatsD client: %v", err)
 	}
 	c.Namespace = filepath.Base(*file)
 	defer c.Close()
@@ -40,7 +40,7 @@ func main() {
 		Addr: *influxAddress,
 	})
 	if err != nil {
-		log.Println("Error creating InfluxDB Client: ", err.Error())
+		log.Fatalf("Error creating InfluxDB Client: %v", err)
 	}
 	defer i.Close()
 	// Create a LogProcessor
@@ -70,7 +70,24 @@ func main() {
 	// Alert
 	var alerter Alerter
 	alerter = CommonLogAlert{}
-	go alerter.Alert(i, *threshold)
+	go func() {
+		status := false
+		for {
+			alert, err := alerter.Alert(i, *threshold)
+			if err != nil {
+				log.Printf("Error with the alerting subsystem: %v", err)
+				return
+			}
+			if alert != status {
+				if alert {
+					c.SimpleEvent("High traffic generated an alert", "hits = {value}, triggered at {time}”")
+				} else {
+					c.SimpleEvent("High traffic alert recovered", "hits = {value}, triggered at {time}”")
+				}
+
+			}
+		}
+	}()
 
 	// Process file
 	for line := range t.Lines {

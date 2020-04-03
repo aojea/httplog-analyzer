@@ -2,7 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"time"
 
+	ui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3/widgets"
 	_ "github.com/influxdata/influxdb1-client" // this is important because of the bug in go mod
 	client "github.com/influxdata/influxdb1-client/v2"
 )
@@ -17,6 +21,34 @@ type CommonLogDisplay struct{}
 
 // Display metrics from graphite
 func (c CommonLogDisplay) Display(i client.Client) error {
+
+	if err := ui.Init(); err != nil {
+		log.Fatalf("failed to initialize termui: %v", err)
+	}
+	defer ui.Close()
+
+	ev := ui.PollEvents()
+	tick := time.Tick(time.Second)
+
+	for {
+		select {
+		case e := <-ev:
+			switch e.Type {
+			case ui.KeyboardEvent:
+				// quit on any keyboard event
+				return nil
+			case ui.ResizeEvent:
+			}
+		case <-tick:
+			// update dashboard every second
+			p := widgets.NewParagraph()
+			p.Text = "Hello World!"
+			p.SetRect(0, 0, 25, 5)
+
+			ui.Render(p)
+		}
+	}
+
 	q := client.NewQuery("SELECT count(value) FROM cpu_load", "mydb", "")
 	if response, err := i.Query(q); err == nil && response.Error() == nil {
 		fmt.Println(response.Results)

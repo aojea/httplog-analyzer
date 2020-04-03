@@ -6,6 +6,7 @@ require (
 	github.com/DataDog/datadog-go v3.5.0+incompatible
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
+	github.com/gizak/termui/v3 v3.1.0
 	github.com/hpcloud/tail v1.0.0
 	github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d
 	github.com/kr/pretty v0.1.0 // indirect

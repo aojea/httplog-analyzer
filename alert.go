@@ -9,17 +9,22 @@ import (
 
 // Alerter send an event based on metrics information
 type Alerter interface {
-	Alert(i client.Client, threshold int) error
+	Alert(i client.Client, threshold int) (bool, error)
 }
 
 // CommonLogAlert implements the Alterter interface
 type CommonLogAlert struct{}
 
 // Alert depending of threshold
-func (c CommonLogAlert) Alert(i client.Client, threshold int) error {
+func (c CommonLogAlert) Alert(i client.Client, threshold int) (bool, error) {
 	q := client.NewQuery("SELECT count(value) FROM cpu_load", "mydb", "")
-	if response, err := i.Query(q); err == nil && response.Error() == nil {
-		fmt.Println(response.Results)
+	response, err := i.Query(q)
+	if err != nil {
+		return false, err
 	}
-	return nil
+	if err == nil && response.Error() == nil {
+		fmt.Println(response.Results)
+		return true, nil
+	}
+	return false, nil
 }
