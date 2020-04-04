@@ -51,6 +51,8 @@ func main() {
 
 	// Open file
 	t, err := tail.TailFile(*file, tail.Config{
+		// start at the end of the file
+		Location:  &tail.SeekInfo{1, os.SEEK_END},
 		Poll:      true,
 		Follow:    true,
 		ReOpen:    false,
@@ -62,23 +64,14 @@ func main() {
 	defer t.Stop()
 	defer t.Cleanup()
 
-	// Display metrics
-	// var displayer Displayer
-	// displayer = &CommonLogDisplay{client: i}
-	// go displayer.Display()
-
 	// Alert
 	alerter := NewAlert(i, filepath.Base(*file))
 	alertCh := make(chan string)
 	go alerter.Alert(*threshold, alertCh)
-	go func() {
-		for {
-			select {
-			case msg := <-alertCh:
-				log.Println(msg)
-			}
-		}
-	}()
+
+	// Display metrics
+	displayer := NewCommonLogDisplay(i, filepath.Base(*file))
+	go displayer.Display(alertCh)
 
 	// Process file
 	for line := range t.Lines {

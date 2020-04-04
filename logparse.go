@@ -123,18 +123,22 @@ func (c CommonLog) parse(line string) (ParsedLineCLF, error) {
 // then we can just split by spaces the rest of the fields
 func getFieldsFromLog(line string) []string {
 	var fields []string
-	// we need at least 7 fields
-	if len(strings.Fields(line)) < 7 {
-		return fields
-	}
 	// Replace [ and ] by "
 	s := strings.Replace(line, "[", "\"", 1)
 	s = strings.Replace(s, "]", "\"", 1)
 	// Split by " so t[1] is the date and [3] the request
 	t := strings.Split(s, "\"")
+	// we should have 5 fields at this point
+	if len(t) != 5 {
+		return []string{}
+	}
 	fields = append(fields, strings.Fields(t[0])...)
 	fields = append(fields, t[1], t[3])
 	fields = append(fields, strings.Fields(t[4])...)
+	// we should have 7 fields at this point
+	if len(fields) != 7 {
+		return []string{}
+	}
 	return fields
 }
 
