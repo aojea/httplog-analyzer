@@ -43,13 +43,11 @@ func main() {
 		log.Fatalf("Error creating InfluxDB Client: %v", err)
 	}
 	defer i.Close()
+
 	// Create a LogProcessor
 	// Using an interface allows to replace the log processor
 	// so we can use different log formats
-	var logParser LogParser
-	// Tag metrics with the filename
-	// TODO: create constructor
-	logParser = CommonLog{client: c, filename: filepath.Base(*file)}
+	logParser := NewCommonLog(c, filepath.Base(*file))
 
 	// Open file
 	t, err := tail.TailFile(*file, tail.Config{
@@ -70,9 +68,7 @@ func main() {
 	// go displayer.Display()
 
 	// Alert
-	var alerter Alerter
-	// TODO: create constructor
-	alerter = &CommonLogAlert{client: i, filename: filepath.Base(*file)}
+	alerter := NewAlert(i, filepath.Base(*file))
 	alertCh := make(chan string)
 	go alerter.Alert(*threshold, alertCh)
 	go func() {

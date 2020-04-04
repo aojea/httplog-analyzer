@@ -21,6 +21,14 @@ type CommonLogAlert struct {
 	filename string
 }
 
+// NewAlert returns a new Alert
+func NewAlert(c client.Client, f string) *CommonLogAlert {
+	return &CommonLogAlert{
+		client:   c,
+		filename: f,
+	}
+}
+
 // Alert depending of threshold
 // TODO: Pass a context to be able to cancel the alert loop
 func (c CommonLogAlert) Alert(threshold int, messages chan<- string) {

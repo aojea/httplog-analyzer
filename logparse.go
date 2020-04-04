@@ -19,6 +19,14 @@ type CommonLog struct {
 	filename string
 }
 
+// NewCommonLog returns a new CommonLog parses
+func NewCommonLog(c *statsd.Client, f string) *CommonLog {
+	return &CommonLog{
+		client:   c,
+		filename: f,
+	}
+}
+
 // Common Logfile Format
 // https://www.w3.org/Daemon/User/Config/Logging.html
 
