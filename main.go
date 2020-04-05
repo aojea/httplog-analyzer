@@ -52,7 +52,7 @@ func main() {
 	// Open file
 	t, err := tail.TailFile(*file, tail.Config{
 		// start at the end of the file
-		Location:  &tail.SeekInfo{1, os.SEEK_END},
+		Location:  &tail.SeekInfo{0, os.SEEK_END},
 		Poll:      true,
 		Follow:    true,
 		ReOpen:    false,
