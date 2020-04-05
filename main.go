@@ -23,8 +23,7 @@ func main() {
 	influxAddress := flag.String("i", "http://127.0.0.1:8086", "InfluxDB server address")
 	threshold := flag.Int("t", 10, "Threshold requests per second averaged over a 2 minutes slot")
 	help := flag.String("h", "", "help")
-	// TODO: add a logger
-	log.SetOutput(ioutil.Discard)
+
 	flag.Parse()
 	if len(os.Args) > 8 || len(*help) > 0 {
 		flag.PrintDefaults()
@@ -61,7 +60,7 @@ func main() {
 		ReOpen:    false,
 		MustExist: true})
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
 	defer t.Stop()
@@ -77,7 +76,8 @@ func main() {
 		for line := range t.Lines {
 			err := logParser.LogParse(line.Text)
 			if err != nil {
-				log.Println(err)
+				// Add a logger
+				// log.Println(err)
 			}
 
 		}
@@ -87,5 +87,7 @@ func main() {
 	// Display metrics
 	displayer := NewCommonLogDisplay(i, filepath.Base(*file))
 	// Displayer blocks until "q" is pressed
+	// and discards current logs
+	log.SetOutput(ioutil.Discard)
 	displayer.Display(alertCh)
 }
