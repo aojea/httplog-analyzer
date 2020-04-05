@@ -86,7 +86,10 @@ func (c CommonLogDisplay) Display(eventCh <-chan string) error {
 	// Draw
 	draw := func() {
 		// update dashboard every 10 second
-		l.Rows = c.getTopSection()
+		top := c.getTopSection()
+		if len(top) > 0 {
+			l.Rows = top
+		}
 		p1.Data[0] = c.getBytesSecond()
 		p2.Data[0] = c.getRequestsSecond()
 		ui.Render(p, l, alerts, p1, p2)
