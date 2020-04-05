@@ -44,13 +44,14 @@ func (c CommonLogAlert) Alert(threshold int, messages chan<- string) {
 		}
 		if err == nil && response.Error() == nil && len(response.Results[0].Series) > 0 {
 			avgReq, _ := response.Results[0].Series[0].Values[0][1].(json.Number).Float64()
+			t := time.Now()
 			// Send alert message if we cross the threshold
 			if int64(avgReq) > int64(threshold) && !alert {
-				messages <- fmt.Sprintf("High traffic generated an alert - hits = %v, triggered at %s", avgReq, time.Now().String())
+				messages <- fmt.Sprintf("High traffic generated an alert - hits = %v, triggered at %s", avgReq, t.Format(time.RFC3339))
 				alert = true
 			} else if int64(avgReq) < int64(threshold) && alert {
 				// Restore the alert
-				messages <- fmt.Sprintf("High traffic alert recovered - hits = %v, triggered at %s", avgReq, time.Now().String())
+				messages <- fmt.Sprintf("High traffic alert recovered - hits = %v, triggered at %s", avgReq, t.Format(time.RFC3339))
 				alert = false
 			}
 		}
