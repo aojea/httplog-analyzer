@@ -111,3 +111,29 @@ type LogParser interface {
 ```
 
 The corresponding code is in the file [logparse.go](logparse.go).
+
+## Test
+
+You can test the alerting logic using `go test -v`
+
+```sh
+go test -v
+=== RUN   TestAlert
+--- PASS: TestAlert (35.01s)
+    alert_test.go:122: Alert expected: High traffic alert recovered - hits = 5.1, triggered at
+         Alert received: High traffic alert recovered - hits = 5.1, triggered at 2020-04-05T17:34:21+02:00
+PASS
+ok      github.com/aojea/httplog-analyzer       35.026s
+```
+
+The corresponding code is in the file [alert_test.go](alert_test.go).
+
+
+## TODO/Improvements
+
+- [ ] Embedded statsd daemong to avoid the dependency on an external StatsD daemon.
+- [ ] Embedded local storage for the metrics to avoid the dependency on an external database.
+- [ ] Improve logging.
+- [ ] Improve dashboard: better metrics, possibility to define time ranges.
+- [ ] Allow to monitor multiple files, using tabs in the UI
+- [ ] Allow to choose between ncurses or console
