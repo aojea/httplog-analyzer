@@ -64,21 +64,25 @@ func main() {
 	defer t.Stop()
 	defer t.Cleanup()
 
-	// Alert
+	// Process alerts
 	alerter := NewAlert(i, filepath.Base(*file))
 	alertCh := make(chan string)
 	go alerter.Alert(*threshold, alertCh)
 
-	// Display metrics
-	displayer := NewCommonLogDisplay(i, filepath.Base(*file))
-	go displayer.Display(alertCh)
-
 	// Process file
-	for line := range t.Lines {
-		err := logParser.LogParse(line.Text)
-		if err != nil {
-			log.Println(err)
+	go func() {
+		for line := range t.Lines {
+			err := logParser.LogParse(line.Text)
+			if err != nil {
+				log.Println(err)
+			}
+
 		}
 
-	}
+	}()
+
+	// Display metrics
+	displayer := NewCommonLogDisplay(i, filepath.Base(*file))
+	// Displayer blocks until "q" is pressed
+	displayer.Display(alertCh)
 }
