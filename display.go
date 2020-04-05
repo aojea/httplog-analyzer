@@ -90,8 +90,15 @@ func (c CommonLogDisplay) Display(eventCh <-chan string) error {
 		if len(top) > 0 {
 			l.Rows = top
 		}
-		p1.Data[0] = c.getBytesSecond()
-		p2.Data[0] = c.getRequestsSecond()
+		bps := c.getBytesSecond()
+		if len(bps) > 0 {
+			p1.Data[0] = c.getBytesSecond()
+		}
+
+		rps := c.getRequestsSecond()
+		if len(rps) > 0 {
+			p2.Data[0] = rps
+		}
 		ui.Render(p, l, alerts, p1, p2)
 	}
 	draw()
@@ -111,7 +118,7 @@ func (c CommonLogDisplay) Display(eventCh <-chan string) error {
 			}
 			draw()
 
-		case <-time.After(10 * time.Second):
+		case <-time.After(1 * time.Second):
 			draw()
 		}
 	}

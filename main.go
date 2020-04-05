@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -22,6 +23,8 @@ func main() {
 	influxAddress := flag.String("i", "http://127.0.0.1:8086", "InfluxDB server address")
 	threshold := flag.Int("t", 10, "Threshold requests per second averaged over a 2 minutes slot")
 	help := flag.String("h", "", "help")
+	// TODO: add a logger
+	log.SetOutput(ioutil.Discard)
 	flag.Parse()
 	if len(os.Args) > 8 || len(*help) > 0 {
 		flag.PrintDefaults()
@@ -58,7 +61,7 @@ func main() {
 		ReOpen:    false,
 		MustExist: true})
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	defer t.Stop()
